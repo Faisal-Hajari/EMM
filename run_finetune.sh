@@ -1,0 +1,1 @@
+python -m torch.distributed.launch --nproc_per_node 1 main_finetune.py --cfg config/finetune_simmim_random_vit_base_img224__800ep.yaml

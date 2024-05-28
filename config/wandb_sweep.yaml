@@ -1,0 +1,136 @@
+program: -m torch.distributed.launch --nproc_per_node 1 main_finetune.py
+name: sweepdemo
+method: bayes
+
+metric:
+  goal: maximize
+  name: acc@1
+early_terminate:
+  type: hyperband
+  max_iter: 3
+  s: 2
+parameters:
+  AUG:
+    desc: null
+    value:
+      AUTO_AUGMENT: 
+        values: [rand-m9-mstd0.5-inc1]
+      COLOR_JITTER:
+        min: 0.05
+        max: 1.0
+      CUTMIX: 
+        min: 0.05
+        max: 0.95 
+      CUTMIX_MINMAX: 
+        values: [null]
+      MIXUP: 
+        min: 0.05
+        max: 0.95 
+      MIXUP_MODE: 
+        values: [batch]
+      MIXUP_PROB: 
+        min: 0.05
+        max: 0.95 
+      MIXUP_SWITCH_PROB: 
+        min: 0.05
+        max: 0.95 
+      RECOUNT: 
+        values: [1]
+      REMODE: 
+        values: [pixel]
+      REPROB: 
+        min: 0.05
+        max: 0.95
+
+  DATA:
+    BATCH_SIZE: 
+      min: 32
+      max: 2048
+    DATASET: 
+      values: [cifar10]
+    DATA_PATH: 
+      values: [images]
+    IMG_SIZE: 
+      values: [32, 64, 128]
+    INTERPOLATION: 
+      values: [bicubic]
+  
+  EVAL_MODE:
+    values: [false]
+  LOCAL_RANK: 
+    values: [0]
+  
+  MODEL:
+    DROP_PATH_RATE:
+      min: 0.0
+      max: 0.8
+    DROP_RATE: 
+      min: 0.0
+      max: 0.8 
+    LABEL_SMOOTHING:
+      min: 0.0
+      max: 0.95
+    NAME: 
+      values: [vit_scratch_finetune]
+    NUM_CLASSES: 
+      values: [10]
+    TYPE: 
+      values: [vit]
+    VIT:
+      EMBED_DIM: 
+        values: [768]
+      DEPTH: 
+        values: [12]
+      NUM_HEADS: 
+        values: [12]
+      USE_APE: 
+        values: [False]
+      USE_RPB: 
+        values: [True]
+      USE_SHARED_RPB: 
+        values: [False]
+      USE_MEAN_POOLING:
+        values: [True]
+  
+  PRETRAINED: 
+    values: [""]
+  PRINT_FREQ: 
+    values: [100]
+  SAVE_FREQ: 
+    values: [30] 
+  SEED:
+    values: [0]
+  
+  TAG: 
+    values: [finetune_vit_scratch_cifar_wandb_SWEEP]
+
+  TRAIN:
+    ACCUMULATION_STEPS: 
+      min: 0
+      max: 10
+    AUTO_RESUME:
+      values: [false]
+    BASE_LR: 
+      min: 0.000025
+      max: 0.1 
+    CLIP_GRAD: 
+      min: 0.05
+      max: 5 
+    EPOCHS: 
+      min: 20
+      max: 60 
+    LAYER_DECAY: 
+      min: 0.065
+      max: 0.9 
+    WARMUP_EPOCHS:
+      min: 0
+      max: 60
+    LR_SCHEDULER:
+      DECAY_EPOCHS:
+        min: 0
+        max: 60
+      DECAY_RATE: 
+        min: 0.01
+        max: 1.0 
+      GAMMA:
+        min: 0.
