@@ -1,12 +1,12 @@
 sweep_config = {
-    "method": "random",  # Choose a search strategy (e.g., random, grid)
-    "metric": {"goal": "maximize", "name": "acc@1"},  # Define the metric to optimize
-    "parameters": {
+    "method": "bayes",  # Choose a search strategy (e.g., random, grid)
+    "metric": {"goal": "maximize", "name": "max_accuracy"},  # Define the metric to optimize
+      "parameters": {
         # Data settings
         "DATA_BATCH_SIZE": {
-            "min":1,
-            "max":5
+            "values": [2**i for i in range(1, 11)]
         },
+        #Model
         "MODEL_DROP_RATE": {
             "min":0.0,
             "max":1.0
@@ -19,20 +19,21 @@ sweep_config = {
             "min":0.0,
             "max":1.0
         },
+        #Train
         "TRAIN_EPOCHS": {
-            "min":0,
+            "min":20,
             "max":60
         },
         "TRAIN_WARMUP_EPOCHS": {
-            "min":0,
-            "max":60
+            "min":3,
+            "max":10
         },
         "TRAIN_WEIGHT_DECAY": {
             "min":0.0,
             "max":1.0
         },
         "TRAIN_BASE_LR": {
-            "min":0.0,
+            "min":1e-6,
             "max":1.0
         },
         "TRAIN_WARMUP_LR": {
@@ -40,7 +41,7 @@ sweep_config = {
             "max":1.0
         },
         "TRAIN_MIN_LR": {
-            "min":0.0,
+            "min":1e-6,
             "max":1.0
         },
         "TRAIN_CLIP_GRAD": {
@@ -67,6 +68,7 @@ sweep_config = {
             "min":0.0,
             "max":1.0
         },
+        #AUG
         "AUG_COLOR_JITTER": {
             "min":0.0,
             "max":1.0
@@ -93,10 +95,7 @@ sweep_config = {
         },
     }
 }
-
-
-
-# --------------------------------------------------------
+  # --------------------------------------------------------
 # SimMIM
 # Copyright (c) 2021 Microsoft
 # Licensed under The MIT License [see LICENSE for details]
@@ -159,14 +158,18 @@ def parse_option():
 
 
 def main():
-    config = dict(wandb.config)
-    logger.info(f"DATA_BATCH_SIZE:: {config["DATA_BATCH_SIZE"]}")
+    wandb.init(config=config)
+    config_wandb = dict(wandb.config)
+    for k, v in config_wandb.items(): 
+        config[k]= v
+
+    logger.info(config)
     dataset_train, dataset_val, data_loader_train, data_loader_val, mixup_fn = build_loader(config, logger, is_pretrain=False)
 
     logger.info(f"Creating model:{config["MODEL_TYPE"]}/{config["MODEL_NAME"]}")
     model = build_model(config, is_pretrain=False)
     model.cuda()
-    # logger.info(str(model))
+    logger.info(str(model))
 
     optimizer = build_optimizer(config, model, logger, is_pretrain=False)
     
@@ -218,15 +221,18 @@ def main():
 
     logger.info("Start training")
     start_time = time.time()
+    patiance = config['PATIANCE']
     for epoch in range(config["TRAIN_START_EPOCH"], config["TRAIN_EPOCHS"]):
         data_loader_train.sampler.set_epoch(epoch)
 
-        train_one_epoch(config, model, criterion, data_loader_train, optimizer, epoch, mixup_fn, lr_scheduler, grad_scaler)
+        flag = train_one_epoch(config, model, criterion, data_loader_train, optimizer, epoch, mixup_fn, lr_scheduler, grad_scaler)
         if dist.get_rank() == 0 and (epoch % config["SAVE_FREQ"] == 0 or epoch == (config["TRAIN_EPOCHS"] - 1)):
             save_checkpoint(config, epoch, model_without_ddp, max_accuracy, optimizer, lr_scheduler, logger)
 
         acc1, acc5, loss = validate(config, data_loader_val, model)
         logger.info(f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.1f}%")
+        if max(max_accuracy, acc1) == max_accuracy: 
+            patiance -= 1 
         max_accuracy = max(max_accuracy, acc1)
         logger.info(f"Max accuracy: {max_accuracy:.2f}%")
 
@@ -238,8 +244,10 @@ def main():
                 "validation loss": loss
             }
         )
+        if flag or patiance<=0 or max_accuracy<=10.0: 
+            break 
 
-    wandb.log({"acc@1":max_accuracy})
+    wandb.log({"max_accuracy":max_accuracy})
     total_time = time.time() - start_time
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))
     logger.info("Training time {}".format(total_time_str))
@@ -272,6 +280,8 @@ def train_one_epoch(config, model, criterion, data_loader, optimizer, epoch, mix
                     loss = criterion(outputs, targets)
 
                 loss = loss / config["TRAIN_ACCUMULATION_STEPS"]
+                if torch.isnan(loss):
+                    return True
                 grad_scaler.scale(loss).backward()
                 if config["TRAIN_CLIP_GRAD"]:
                     grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), config["TRAIN_CLIP_GRAD"])
@@ -282,6 +292,8 @@ def train_one_epoch(config, model, criterion, data_loader, optimizer, epoch, mix
                 outputs = model(samples)
                 loss = criterion(outputs, targets)
                 loss = loss / config["TRAIN_ACCUMULATION_STEPS"]
+                if torch.isnan(loss):
+                    return True 
                 loss.backward()
                 if config["TRAIN_CLIP_GRAD"]:
                     grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), config["TRAIN_CLIP_GRAD"])
@@ -289,7 +301,10 @@ def train_one_epoch(config, model, criterion, data_loader, optimizer, epoch, mix
                     grad_norm = get_grad_norm(model.parameters())
             
             if (idx + 1) % config["TRAIN_ACCUMULATION_STEPS"] == 0:
-                optimizer.step()
+                if config["AMP"]:
+                    grad_scaler.step(optimizer)
+                else: 
+                    optimizer.step()
                 optimizer.zero_grad()
                 lr_scheduler.step_update(epoch * num_steps + idx)
                 if config["AMP"]:
@@ -301,6 +316,8 @@ def train_one_epoch(config, model, criterion, data_loader, optimizer, epoch, mix
                 with autocast(device_type="cuda", dtype=torch.float16):
                     outputs = model(samples)
                     loss = criterion(outputs, targets)
+                if torch.isnan(loss):
+                    return True
                 grad_scaler.scale(loss).backward()
                 if config["TRAIN_CLIP_GRAD"]:
                     grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), config["TRAIN_CLIP_GRAD"])
@@ -310,12 +327,18 @@ def train_one_epoch(config, model, criterion, data_loader, optimizer, epoch, mix
             else:
                 outputs = model(samples)
                 loss = criterion(outputs, targets)
+                if torch.isnan(loss):
+                    return True
                 loss.backward()
                 if config["TRAIN_CLIP_GRAD"]:
                     grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), config["TRAIN_CLIP_GRAD"])
                 else:
                     grad_norm = get_grad_norm(model.parameters())
-            optimizer.step()
+            
+            if config["AMP"]:
+                grad_scaler.step(optimizer)
+            else: 
+                optimizer.step()
             lr_scheduler.step_update(epoch * num_steps + idx)
 
         torch.cuda.synchronize()
@@ -357,6 +380,7 @@ def train_one_epoch(config, model, criterion, data_loader, optimizer, epoch, mix
                     "epoch_time":int(datetime.timedelta(seconds=int(epoch_time)).seconds), 
                 }
             )
+    return False
 
 @torch.no_grad()
 def validate(config, data_loader, model):
@@ -445,10 +469,8 @@ if __name__ == "__main__":
     os.makedirs(config["OUTPUT"], exist_ok=True)
     logger = create_logger(output_dir=config["OUTPUT"], dist_rank=dist.get_rank(), name=f"{config["MODEL_NAME"]}")
 
-    run = wandb.init(project=F"{config["MODEL_NAME"]}_{config["TAG"]}", config=config, allow_val_change=True)
-    sweep_id = wandb.sweep(sweep_config)
-    config = wandb.config
-
+    # run = wandb.init()
+    sweep_id = wandb.sweep(sweep_config, project=F"{config["MODEL_NAME"]}_{config["TAG"]}")
     # linear scale the learning rate according to total batch size, may not be optimal
     linear_scaled_lr = config["TRAIN_BASE_LR"] * config["DATA_BATCH_SIZE"] * dist.get_world_size() / 512.0
     linear_scaled_warmup_lr = config["TRAIN_WARMUP_LR"] * config["DATA_BATCH_SIZE"] * dist.get_world_size() / 512.0
@@ -468,7 +490,5 @@ if __name__ == "__main__":
             json.dump(dict(config), f, indent=4)
         logger.info(f"Full config saved to {path}")
 
-    # print config
-    logger.info(config)
-    wandb.agent(sweep_id, function=main, count=3)
+    wandb.agent(sweep_id, function=main, count=500)
     # main()

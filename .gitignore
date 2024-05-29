@@ -2,3 +2,6 @@ images
 *.ipynb
 .txt
 TODOS.py
+output
+wandb
+*.pyc

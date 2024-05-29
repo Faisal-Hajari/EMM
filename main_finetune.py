@@ -126,6 +126,7 @@ def main():
 
     logger.info("Start training")
     start_time = time.time()
+    
     for epoch in range(config["TRAIN_START_EPOCH"], config["TRAIN_EPOCHS"]):
         data_loader_train.sampler.set_epoch(epoch)
 
@@ -134,7 +135,7 @@ def main():
             save_checkpoint(config, epoch, model_without_ddp, max_accuracy, optimizer, lr_scheduler, logger)
 
         acc1, acc5, loss = validate(config, data_loader_val, model)
-        logger.info(f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.1f}%")
+        logger.info(f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.1f}%")           
         max_accuracy = max(max_accuracy, acc1)
         logger.info(f"Max accuracy: {max_accuracy:.2f}%")
 
@@ -375,4 +376,4 @@ if __name__ == "__main__":
 
     # print config
     logger.info(config)
-    main(config)
+    main()
