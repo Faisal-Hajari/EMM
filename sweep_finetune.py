@@ -1,98 +1,28 @@
 sweep_config = {
-    "method": "bayes",  # Choose a search strategy (e.g., random, grid)
+    "method": "random",  # Choose a search strategy (e.g., random, grid)
     "metric": {"goal": "maximize", "name": "max_accuracy"},  # Define the metric to optimize
       "parameters": {
-        # Data settings
-        "DATA_BATCH_SIZE": {
-            "values": [2**i for i in range(1, 11)]
-        },
-        #Model
-        "MODEL_DROP_RATE": {
-            "min":0.0,
-            "max":1.0
-        },
-        "MODEL_DROP_PATH_RATE": {
-            "min":0.0,
-            "max":1.0
-        },
-        "MODEL_LABEL_SMOOTHING": {
-            "min":0.0,
-            "max":1.0
-        },
-        #Train
-        "TRAIN_EPOCHS": {
-            "min":20,
-            "max":60
-        },
-        "TRAIN_WARMUP_EPOCHS": {
-            "min":3,
-            "max":10
-        },
-        "TRAIN_WEIGHT_DECAY": {
-            "min":0.0,
-            "max":1.0
-        },
-        "TRAIN_BASE_LR": {
-            "min":1e-6,
-            "max":1.0
-        },
-        "TRAIN_WARMUP_LR": {
-            "min":0.0,
-            "max":1.0
-        },
-        "TRAIN_MIN_LR": {
-            "min":1e-6,
-            "max":1.0
-        },
-        "TRAIN_CLIP_GRAD": {
-            "min":0.0,
-            "max":5.0
-        },
-        "TRAIN_ACCUMULATION_STEPS": {
-            "min":0,
-            "max":60
-        },
-        "TRAIN_LR_SCHEDULER_DECAY_EPOCHS": {
-            "min":0,
-            "max":60
-        },
-        "TRAIN_LR_SCHEDULER_DECAY_RATE": {
-            "min":0.0,
-            "max":1.0
-        },
-        "TRAIN_LR_SCHEDULER_GAMMA":{
-            "min":0.0,
-            "max":1.0
-        },
-        "TRAIN_LAYER_DECAY": {
-            "min":0.0,
-            "max":1.0
-        },
-        #AUG
-        "AUG_COLOR_JITTER": {
-            "min":0.0,
-            "max":1.0
-        },
-        "AUG_REPROB": {
-            "min":0.0,
-            "max":1.0
-        },
-        "AUG_MIXUP": {
-            "min":0.0,
-            "max":1.0
-        },
-        "AUG_CUTMIX": {
-            "min":0.0,
-            "max":1.0
-        },
-        "AUG_MIXUP_PROB":{
-            "min":0.0,
-            "max":1.0
-        },
-        "AUG_MIXUP_SWITCH_PROB":{
-            "min":0.0,
-            "max":1.0
-        },
+        'AUG_COLOR_JITTER': {'values': [0.19142765, 0.1939659,0.2687049,0.4,0.5312951,0.6060341,0.60857236]},
+        'AUG_CUTMIX': {'values': [0.073544264,0.35426086,0.64957076,0.751639,0.85458434,0.9037231,1.0]},
+        'AUG_MIXUP': {'values': [0.0,0.2096451,0.23680645,0.3550117,0.7190215,0.9890876,1.0]},
+        'AUG_MIXUP_PROB': {'values': [0.12280595,0.30467975,0.31916678,0.40000468,0.4958151,0.7025622,1.0]},
+        'AUG_MIXUP_SWITCH_PROB': {'values': [0.022307009,0.13213614,0.38405824,0.5,0.61594176,0.8678639,0.97769296,1.0]},
+        'AUG_REPROB': {'values': [0.08310923,0.21976,0.25,0.58310926,0.71976,0.7710203,0.9768015,1.0]},
+        'DATA_BATCH_SIZE': {'values': [64, 128, 256, 512, 1024]},
+        'MODEL_DROP_PATH_RATE': {'values': [0.030991517,0.1,0.1690085,0.36810523,0.5681052,0.7711458,0.97114587,0.95]},
+        'MODEL_DROP_RATE': {'values': [0.0,0.049390446,0.25506154,0.32669935,0.3506588,0.38954917,0.51296324,0.95]},
+        'MODEL_LABEL_SMOOTHING': {'values': [0.026220776,0.1,0.22622079,0.52637655,0.7263766,0.8404708,0.95]},
+        'TRAIN_ACCUMULATION_STEPS': {'values': [0, 1, 2, 5, 7, 8, 9]},
+        'TRAIN_BASE_LR': {'values': [0.00255859375,0.026838038,0.031955227,0.7334642,0.73858136,0.99940324,1.0]},
+        'TRAIN_CLIP_GRAD': {'values': [1, 3, 4, 5, 6, 9, 13]},
+        'TRAIN_EPOCHS': {'values': [36, 41, 44, 45, 46, 49, 54]},
+        'TRAIN_LAYER_DECAY': {'values': [0.2460284,0.3720761,0.4017095,0.65,0.89829046,0.92792386,0.95]},
+        'TRAIN_WARMUP_EPOCHS': {'values': [1, 2, 3, 4, 5, 7, 8, 11, 14]},
+        'TRAIN_LR_SCHEDULER_DECAY_EPOCHS': {'values': [17, 22, 24, 25, 26, 28, 33]},
+        'TRAIN_LR_SCHEDULER_DECAY_RATE': {'values': [0.1,0.27690786,0.47690785,0.6295608,0.8295609,0.83221257,0.95]},
+        'TRAIN_LR_SCHEDULER_GAMMA': {'values': [0.1,0.20474148,0.34909925,0.40474147,0.5197809,0.54909927,0.7197809,0.95]},
+        'TRAIN_MIN_LR': {'values': [5.117187499999999e-07,0.050085,0.05008602,0.38906166,0.38906267,0.9322572,0.93225825]},
+        'TRAIN_OPTIMIZER_MOMENTUM': {'values': [0.032524765,0.38258517,0.60187066,0.62120306,0.64276683,0.7398006,0.9,0.95]},
     }
 }
   # --------------------------------------------------------
@@ -127,7 +57,6 @@ from logger import create_logger
 from utils import load_checkpoint, load_pretrained, save_checkpoint, get_grad_norm, auto_resume_helper, reduce_tensor
 
 import wandb
-wandb.login()
 
 def parse_option():
     parser = argparse.ArgumentParser("Swin Transformer training and evaluation script", add_help=False)
@@ -233,6 +162,9 @@ def main():
         logger.info(f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.1f}%")
         if max(max_accuracy, acc1) == max_accuracy: 
             patiance -= 1 
+        else: 
+            patiance = config['PATIANCE']
+            
         max_accuracy = max(max_accuracy, acc1)
         logger.info(f"Max accuracy: {max_accuracy:.2f}%")
 
