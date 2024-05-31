@@ -174,6 +174,7 @@ def train_one_epoch(config, model, criterion, data_loader, optimizer, epoch, mix
             samples, targets = mixup_fn(samples, targets)
         
         if config["TRAIN_ACCUMULATION_STEPS"] > 1:
+
             if config["AMP"]:
                 with autocast(device_type="cuda", dtype=torch.float16):
                     outputs = model(samples)
@@ -181,11 +182,7 @@ def train_one_epoch(config, model, criterion, data_loader, optimizer, epoch, mix
 
                 loss = loss / config["TRAIN_ACCUMULATION_STEPS"]
                 grad_scaler.scale(loss).backward()
-                if config["TRAIN_CLIP_GRAD"]:
-                    grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), config["TRAIN_CLIP_GRAD"])
-                else: 
-                    grad_norm = get_grad_norm(model.parameters())   
-
+                
             else:
                 outputs = model(samples)
                 loss = criterion(outputs, targets)
@@ -196,13 +193,23 @@ def train_one_epoch(config, model, criterion, data_loader, optimizer, epoch, mix
                 else:
                     grad_norm = get_grad_norm(model.parameters())
             
+            
+
             if (idx + 1) % config["TRAIN_ACCUMULATION_STEPS"] == 0:
+                if config["AMP"]:
+                    grad_scaler.unscale_(optimizer)
+                if config["TRAIN_CLIP_GRAD"]:
+                    grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), config["TRAIN_CLIP_GRAD"])
+                else: 
+                    grad_norm = get_grad_norm(model.parameters())
                 optimizer.step()
-                optimizer.zero_grad()
                 lr_scheduler.step_update(epoch * num_steps + idx)
                 if config["AMP"]:
                     grad_scaler.update()
-
+                optimizer.zero_grad()
+            else: 
+                grad_norm = get_grad_norm(model.parameters()) #we add it here to maintain logs 
+        
         else:
             optimizer.zero_grad()
             if config["AMP"]:
@@ -210,6 +217,9 @@ def train_one_epoch(config, model, criterion, data_loader, optimizer, epoch, mix
                     outputs = model(samples)
                     loss = criterion(outputs, targets)
                 grad_scaler.scale(loss).backward()
+
+                grad_scaler.unscale_(optimizer)
+
                 if config["TRAIN_CLIP_GRAD"]:
                     grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), config["TRAIN_CLIP_GRAD"])
                 else: 
@@ -225,6 +235,7 @@ def train_one_epoch(config, model, criterion, data_loader, optimizer, epoch, mix
                     grad_norm = get_grad_norm(model.parameters())
             optimizer.step()
             lr_scheduler.step_update(epoch * num_steps + idx)
+            grad_scaler.update()
 
         torch.cuda.synchronize()
 
