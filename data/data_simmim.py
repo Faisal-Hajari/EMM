@@ -57,7 +57,6 @@ class ExpandingMaskGenerator(MaskGenerator):
         """Note, here we relay on the image to be squares. for different aspact ratios 
         indexing logic might need to be changed.
         assums 0 is masked 1 is unmasked """ 
-        assert np.sqrt(input_size)**2 == input_size, "the input is not a square image"
         self.n_rows = self.n_col = input_size//model_patch_size
         self.input_size = (input_size//model_patch_size)**2
         self.masks = self.__generate_mask()
@@ -113,7 +112,7 @@ class ExpandingMaskTransform:
         self.mask_generator = ExpandingMaskGenerator(
             input_size=config["DATA_IMG_SIZE"],
             mask_patch_size=config["DATA_MASK_PATCH_SIZE"],
-            model_patch_size=config["MODEL_PATCH_SIZE"],
+            model_patch_size=config["MODEL_VIT_PATCH_SIZE"],
             mask_ratio=config["DATA_MASK_RATIO"],
         )
     
@@ -136,7 +135,7 @@ class SimMIMTransform:
         self.mask_generator = MaskGenerator(
             input_size=config["DATA_IMG_SIZE"],
             mask_patch_size=config["DATA_MASK_PATCH_SIZE"],
-            model_patch_size=config["MODEL_PATCH_SIZE"],
+            model_patch_size=config["MODEL_VIT_PATCH_SIZE"],
             mask_ratio=config["DATA_MASK_RATIO"],
         )
     
@@ -156,9 +155,9 @@ def build_loader_pretrain(config, logger):
     
     logger.info(f"Pre-train data transform:\n{transform}")
 
-    if config["DATA_NAME"]=="cifar10":
-        dataset = CIFAR10("./cifar10", train=True, transform=transform, download=True)
-    elif config["DATA_NAME"]=="imagefolder":
+    if config["DATA_DATASET"]=="cifar10":
+        dataset = CIFAR10(config["DATA_DATA_PATH"], train=True, transform=transform, download=True)
+    elif config["DATA_DATASET"]=="imagefolder":
         dataset = ImageFolder(config["DATA_DATA_PATH"], transform)
 
      
