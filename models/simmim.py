@@ -113,6 +113,6 @@ def build_simmim(config):
         use_rel_pos_bias=config["MODEL_VIT_USE_RPB"],
         use_shared_rel_pos_bias=config["MODEL_VIT_USE_SHARED_RPB"],
         use_mean_pooling=config["MODEL_VIT_USE_MEAN_POOLING"])
-    encoder_stride = 16
+    encoder_stride = config['MODEL_VIT_PATCH_SIZE']
     model = SimMIM(encoder=encoder, encoder_stride=encoder_stride)
     return model
