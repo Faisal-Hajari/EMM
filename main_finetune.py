@@ -31,6 +31,8 @@ from utils import load_checkpoint, load_pretrained, save_checkpoint, get_grad_no
 
 import wandb
 
+torch.set_float32_matmul_precision('high')
+
 def parse_option():
     parser = argparse.ArgumentParser("Swin Transformer training and evaluation script", add_help=False)
     parser.add_argument("--cfg", type=str, required=True, metavar="FILE", help="path to config file", )
@@ -58,7 +60,7 @@ def parse_option():
     parser.add_argument("--throughput", action="store_true", help="Test throughput only")
 
     # distributed training
-    parser.add_argument("--local-rank", type=int, required=True, help="local rank for DistributedDataParallel")
+    # parser.add_argument("--local-rank", type=int, required=True, help="local rank for DistributedDataParallel")
 
     args = parser.parse_args()
 
@@ -71,7 +73,7 @@ def main():
     config = dict(wandb.config)
     dataset_train, dataset_val, data_loader_train, data_loader_val, mixup_fn = build_loader(config, logger, is_pretrain=False)
 
-    logger.info(f"Creating model:{config["MODEL_TYPE"]}/{config["MODEL_NAME"]}")
+    logger.info(f'Creating model:{config["MODEL_TYPE"]}/{config["MODEL_NAME"]}')
     model = build_model(config, is_pretrain=False)
     model.cuda()
     logger.info(str(model))
@@ -105,11 +107,11 @@ def main():
         resume_file = auto_resume_helper(config["OUTPUT"], logger)
         if resume_file:
             if config["MODEL_RESUME"]:
-                logger.warning(f"auto-resume changing resume file from {config["MODEL_RESUME"]} to {resume_file}")
+                logger.warning(f'auto-resume changing resume file from {config["MODEL_RESUME"]} to {resume_file}')
             config["MODEL_RESUME"] = resume_file
             logger.info(f"auto resuming from {resume_file}")
         else:
-            logger.info(f"no checkpoint found in {config["OUTPUT"]}, ignoring auto resume")
+            logger.info(f'no checkpoint found in {config["OUTPUT"]}, ignoring auto resume')
 
     if config["MODEL_RESUME"]:
         max_accuracy = load_checkpoint(config, model_without_ddp, optimizer, lr_scheduler, logger)
@@ -157,7 +159,7 @@ def train_one_epoch(config, model, criterion, data_loader, optimizer, epoch, mix
     model.train()
     optimizer.zero_grad()
     
-    logger.info(f"Current learning rate for different parameter groups: {[it["lr"] for it in optimizer.param_groups]}")
+    logger.info(f'Current learning rate for different parameter groups: {[it["lr"] for it in optimizer.param_groups]}')
 
     num_steps = len(data_loader)
     batch_time = AverageMeter()
@@ -244,12 +246,12 @@ def train_one_epoch(config, model, criterion, data_loader, optimizer, epoch, mix
             memory_used = torch.cuda.max_memory_allocated() / (1024.0 * 1024.0)
             etas = batch_time.avg * (num_steps - idx)
             logger.info(
-                f"Train: [{epoch}/{config["TRAIN_EPOCHS"]}][{idx}/{num_steps}]\t"
-                f"eta {datetime.timedelta(seconds=int(etas))} lr {lr:.6f}\t"
-                f"time {batch_time.val:.4f} ({batch_time.avg:.4f})\t"
-                f"loss {loss_meter.val:.4f} ({loss_meter.avg:.4f})\t"
-                f"grad_norm {norm_meter.val:.4f} ({norm_meter.avg:.4f})\t"
-                f"mem {memory_used:.0f}MB")
+                f'Train: [{epoch}/{config["TRAIN_EPOCHS"]}][{idx}/{num_steps}]\t'
+                f'eta {datetime.timedelta(seconds=int(etas))} lr {lr:.6f}\t'
+                f'time {batch_time.val:.4f} ({batch_time.avg:.4f})\t'
+                f'loss {loss_meter.val:.4f} ({loss_meter.avg:.4f})\t'
+                f'grad_norm {norm_meter.val:.4f} ({norm_meter.avg:.4f})\t'
+                f'mem {memory_used:.0f}MB')
             wandb.log(
                 {
                     "epoch":epoch,
@@ -371,14 +373,14 @@ if __name__ == "__main__":
     config["TRAIN_MIN_LR"] = linear_scaled_min_lr
 
     os.makedirs(config["OUTPUT"], exist_ok=True)
-    logger = create_logger(output_dir=config["OUTPUT"], dist_rank=dist.get_rank(), name=f"{config["MODEL_NAME"]}")
+    logger = create_logger(output_dir=config["OUTPUT"], dist_rank=dist.get_rank(), name=f'{config["MODEL_NAME"]}')
 
     if dist.get_rank() == 0:
         path = os.path.join(config["OUTPUT"], "config.json")
         with open(path, "w+") as f:
             json.dump(config, f, indent=4)
         logger.info(f"Full config saved to {path}")
-        run = wandb.init(project=F"{config["MODEL_NAME"]}_{config["TAG"]}", config=config)
+        run = wandb.init(project=f'{config["MODEL_NAME"]}_{config["TAG"]}', config=config)
 
     # print config
     logger.info(config)

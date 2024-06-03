@@ -14,7 +14,7 @@ from scipy import interpolate
 
 
 def load_checkpoint(config, model, optimizer, lr_scheduler, logger):
-    logger.info(f">>>>>>>>>> Resuming from {config["MODEL_RESUME"]} ..........")
+    logger.info(f'>>>>>>>>>> Resuming from {config["MODEL_RESUME"]} ..........')
     if config["MODEL_RESUME"].startswith("https"):
         checkpoint = torch.hub.load_state_dict_from_url(
             config["MODEL_RESUME"], map_location="cpu", check_hash=True)
@@ -46,7 +46,7 @@ def save_checkpoint(config, epoch, model, max_accuracy, optimizer, lr_scheduler,
                   "epoch": epoch,
                   "config": config}
 
-    save_path = os.path.join(config["OUTPUT"], f"ckpt_epoch_{epoch}.pth")
+    save_path = os.path.join(config["OUTPUT"], f'ckpt_epoch_{epoch}.pth')
     logger.info(f"{save_path} saving......")
     torch.save(save_state, save_path)
     logger.info(f"{save_path} saved !!!")
@@ -86,7 +86,7 @@ def reduce_tensor(tensor):
 
 
 def load_pretrained(config, model, logger):
-    logger.info(f">>>>>>>>>> Fine-tuned from {config["PRETRAINED"]} ..........")
+    logger.info(f'>>>>>>>>>> Fine-tuned from {config["PRETRAINED"]} ..........')
     checkpoint = torch.load(config["PRETRAINED"], map_location="cpu")
     checkpoint_model = checkpoint["model"]
     

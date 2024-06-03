@@ -1,1 +1,1 @@
-python -m torch.distributed.launch --nproc_per_node 1 main_simmim.py --cfg config/pretraining_simim_exp_vit_base_image32_800.yaml
+torchrun --nproc_per_node 1 main_simmim.py --cfg config/pretraining_simim_exp_vit_base_image32_800.yaml --batch-size 32

@@ -95,7 +95,7 @@ def main():
     logger.info(config)
     dataset_train, dataset_val, data_loader_train, data_loader_val, mixup_fn = build_loader(config, logger, is_pretrain=False)
 
-    logger.info(f"Creating model:{config["MODEL_TYPE"]}/{config["MODEL_NAME"]}")
+    logger.info(f'Creating model:{config["MODEL_TYPE"]}/{config["MODEL_NAME"]}')
     model = build_model(config, is_pretrain=False)
     model.cuda()
     logger.info(str(model))
@@ -129,11 +129,11 @@ def main():
         resume_file = auto_resume_helper(config["OUTPUT"], logger)
         if resume_file:
             if config["MODEL_RESUME"]:
-                logger.warning(f"auto-resume changing resume file from {config["MODEL_RESUME"]} to {resume_file}")
+                logger.warning(f'auto-resume changing resume file from {config["MODEL_RESUME"]} to {resume_file}')
             config["MODEL_RESUME"] = resume_file
             logger.info(f"auto resuming from {resume_file}")
         else:
-            logger.info(f"no checkpoint found in {config["OUTPUT"]}, ignoring auto resume")
+            logger.info(f'no checkpoint found in {config["OUTPUT"]}, ignoring auto resume')
 
     if config["MODEL_RESUME"]:
         max_accuracy = load_checkpoint(config, model_without_ddp, optimizer, lr_scheduler, logger)
@@ -285,7 +285,7 @@ def train_one_epoch(config, model, criterion, data_loader, optimizer, epoch, mix
             memory_used = torch.cuda.max_memory_allocated() / (1024.0 * 1024.0)
             etas = batch_time.avg * (num_steps - idx)
             logger.info(
-                f"Train: [{epoch}/{config["TRAIN_EPOCHS"]}][{idx}/{num_steps}]\t"
+                f'Train: [{epoch}/{config["TRAIN_EPOCHS"]}][{idx}/{num_steps}]\t'
                 f"eta {datetime.timedelta(seconds=int(etas))} lr {lr:.6f}\t"
                 f"time {batch_time.val:.4f} ({batch_time.avg:.4f})\t"
                 f"loss {loss_meter.val:.4f} ({loss_meter.avg:.4f})\t"
@@ -399,10 +399,10 @@ if __name__ == "__main__":
     cudnn.benchmark = True
 
     os.makedirs(config["OUTPUT"], exist_ok=True)
-    logger = create_logger(output_dir=config["OUTPUT"], dist_rank=dist.get_rank(), name=f"{config["MODEL_NAME"]}")
+    logger = create_logger(output_dir=config["OUTPUT"], dist_rank=dist.get_rank(), name=f'{config["MODEL_NAME"]}')
 
     # run = wandb.init()
-    sweep_id = wandb.sweep(sweep_config, project=F"{config["MODEL_NAME"]}_{config["TAG"]}")
+    sweep_id = wandb.sweep(sweep_config, project=f'{config["MODEL_NAME"]}_{config["TAG"]}')
     # linear scale the learning rate according to total batch size, may not be optimal
     linear_scaled_lr = config["TRAIN_BASE_LR"] * config["DATA_BATCH_SIZE"] * dist.get_world_size() / 512.0
     linear_scaled_warmup_lr = config["TRAIN_WARMUP_LR"] * config["DATA_BATCH_SIZE"] * dist.get_world_size() / 512.0

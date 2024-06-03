@@ -30,6 +30,8 @@ from utils import load_checkpoint, save_checkpoint, get_grad_norm, auto_resume_h
 import wandb 
 import json 
 
+torch.set_float32_matmul_precision('high')
+
 def parse_option():
     parser = argparse.ArgumentParser('SimMIM pre-training script', add_help=False)
     parser.add_argument('--cfg', type=str, required=True, metavar="FILE", help='path to config file', )
@@ -54,7 +56,7 @@ def parse_option():
     parser.add_argument('--tag', help='tag of experiment')
 
     # distributed training
-    parser.add_argument("--local-rank", type=int, required=True, help='local rank for DistributedDataParallel')
+    # parser.add_argument("--local-rank", type=int, required=True, help='local rank for DistributedDataParallel')
 
     args = parser.parse_args()
 
@@ -67,8 +69,9 @@ def main():
     config = dict(wandb.config)
     data_loader_train = build_loader(config, logger, is_pretrain=True)
 
-    logger.info(f"Creating model:{config["MODEL_TYPE"]}/{config["MODEL_NAME"]}")
+    logger.info(f'Creating model:{config["MODEL_TYPE"]}/{config["MODEL_NAME"]}')
     model = build_model(config, is_pretrain=True)
+    # model = torch.compile(model) #4:46  | w/o 3:33 
     model.cuda()
     logger.info(str(model))
 
@@ -89,7 +92,7 @@ def main():
         resume_file = auto_resume_helper(config["OUTPUT"], logger)
         if resume_file:
             if config["MODEL_RESUME"]:
-                logger.warning(f"auto-resume changing resume file from {config["MODEL_RESUME"]} to {resume_file}")
+                logger.warning(f'auto-resume changing resume file from {config["MODEL_RESUME"]} to {resume_file}')
             config["MODEL_RESUME"] = resume_file
             logger.info(f'auto resuming from {resume_file}')
         else:
@@ -250,14 +253,14 @@ if __name__ == '__main__':
     config["TRAIN_MIN_LR"] = linear_scaled_min_lr
 
     os.makedirs(config["OUTPUT"], exist_ok=True)
-    logger = create_logger(output_dir=config["OUTPUT"], dist_rank=dist.get_rank(), name=f"{config["MODEL_NAME"]}")
+    logger = create_logger(output_dir=config["OUTPUT"], dist_rank=dist.get_rank(), name=f'{config["MODEL_NAME"]}')
 
     if dist.get_rank() == 0:
         path = os.path.join(config["OUTPUT"], "config.json")
         with open(path, "w") as f:
             json.dump(config, f, indent=4)
         logger.info(f"Full config saved to {path}")
-        run = wandb.init(project=F"{config["MODEL_NAME"]}_{config["TAG"]}", config=config)
+        run = wandb.init(project=f'{config["MODEL_NAME"]}_{config["TAG"]}', config=config)
 
     # print config
     logger.info(config)
