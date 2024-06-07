@@ -78,6 +78,11 @@ class SimMIM(nn.Module):
 
         mask = mask.repeat_interleave(self.patch_size, 1).repeat_interleave(self.patch_size, 2).unsqueeze(1).contiguous()
         loss_recon = F.l1_loss(x, x_rec, reduction="none")
+
+        #wiegh the loss by how much of the image is masked (the more it is masked the lower the wieght)
+        loss_wieght = mask.view(mask.shape[0], -1).sum(dim=1).to(loss_recon.dtype).softmax(0)
+        loss_recon= loss_recon*loss_wieght
+
         loss = (loss_recon * mask).sum() / (mask.sum() + 1e-5) / self.in_chans
         return loss
 
