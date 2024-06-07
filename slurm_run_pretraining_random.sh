@@ -9,4 +9,4 @@
 #SBATCH --error=simmim_train_expand_cifar%j.err   # Error file with job ID (%j)
 
 # Execute your command using srun for distributed launch
-srun python -m torch.distributed.launch --nproc_per_node 8 main_simmim.py --cfg config/pretraining_simim_vit_base_image32_800.yaml
+torchrun --nproc_per_node 8 main_simmim.py --cfg config/pretraining_simim_vit_base_image32_800.yaml
